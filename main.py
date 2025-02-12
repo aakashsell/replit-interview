@@ -12,6 +12,8 @@ app = Flask(__name__)
 sessions = {}
 sessions['last_id'] = 0
 
+# database stuff not fully working
+
 def create_session_data(session_id):
     con = sqlite3.connect("./session.db")
     cur = con.cursor()
@@ -68,6 +70,9 @@ def update_vars(session_id, global_vars, local_vars):
     con.commit()
     
     con.close()
+
+
+ # Main api, this is the good stuff!   
 
 
 @app.route('/session-id', methods=['GET'])
