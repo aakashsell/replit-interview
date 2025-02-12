@@ -21,27 +21,25 @@ def execute_code(code, global_vars, local_vars):
 
 def handle_objects(obj):
     output = {}
-    visited = set()
-    objects = traverse_graph(obj, visited)
-    return objects
+    references = {}
+    traverse_graph(obj, references)
+    return references
     
-def traverse_graph(obj, visited):
+def traverse_graph(obj, references):
     object_id = id(obj)
-    if object_id in visited:
-        return []
+    if object_id in references:
+        return {"ref": f"%{object_id}%"}
     
-    visited.add(object_id)
-
-    collected = [obj]
+    references[object_id] =  {"id": object_id, "value": None}
 
     if isinstance(obj, dict):
-        for value in obj.values():
-            collected.extend(traverse_graph(value, visited))
-            
+        references[object_id]["value"] = {k: traverse_graph(v, references) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple, set)):
-        for item in obj:
-            collected.extend(traverse_graph(item, visited))
+        references[object_id]["value"] = [traverse_graph(item, references) for item in obj]
+    else:
+        references[object_id]["value"] = obj  
+
+    return {"ref": object_id} 
     
-    return collected
     
 
