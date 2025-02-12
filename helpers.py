@@ -3,14 +3,12 @@ def execute_code(code, global_vars, local_vars):
     output = ""
     try:
         output = eval(code, global_vars, local_vars)
-        print(output)
     except Exception as e1:
         #try using exec
         print("eval didn't work, trying exec ")
         error = e1
         try:
            output = exec(code, global_vars, local_vars) 
-           print(output)
         except Exception as e2:
             error = e2
             print("exec didn't work, retuning 0 ")

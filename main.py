@@ -12,27 +12,40 @@ app = Flask(__name__)
 sessions = {}
 sessions['last_id'] = 0
 
+def create_session_data(session_id):
+    con = sqlite3.connect("./session.db")
+    cur = con.cursor()
+
+    cur.execute("""
+        INSERT INTO session_data (session_id, global_vars, local_vars)
+        VALUES (?, ?, ?)
+        """, (session_id, json.dumps({}), json.dumps({})))
+     
+    con.commit()
+
+    con.close()
+    
+def check_session_id(session_id):
+    con = sqlite3.connect("./session.db")
+    cur = con.cursor()
+
+    cur.execute("select global_vars, local_vars from session_data where session_id = ?", (session_id,))
+    session = cur.fetchone()
+    if session == None:
+        return False
+    
+    sessions[session_id] = {}
+    return True
+
+    con.close()
+    
+
 def get_session_data(session_id = None):
     con = sqlite3.connect("./session.db")
     cur = con.cursor()
 
     cur.execute("select global_vars, local_vars from session_data where session_id = ?", (session_id,))
     session = cur.fetchone()
-    if session == None or len(session) == 0:
-        cur.execute("INSERT INTO session_data (session_id, global_vars, local_vars) VALUES (?, ?, ?) RETURNING session_id", 
-            (session_id, json.dumps({}), json.dumps({})))
-        session_id = cur.fetchone()[0]
-        sessions[session_id]['global'] = {}
-        sessions[session_id]['local'] = {}
-        return session_id
-
-    if not session_id == None:
-        cur.execute("INSERT INTO session_data (global_vars, local_vars) VALUES (?, ?) RETURNING session_id", 
-            (json.dumps({}), json.dumps({})))
-        session_id = cur.fetchone()[0]
-        sessions[session_id]['global'] = {}
-        sessions[session_id]['local'] = {}
-        return session_id
     
     
     sessions[session_id]['global'] = json.loads(session[0])
@@ -52,6 +65,8 @@ def update_vars(session_id, global_vars, local_vars):
             WHERE session_id = ?
         """, (json.dumps(global_vars), json.dumps(local_vars), session_id))
     
+    con.commit()
+    
     con.close()
 
 
@@ -68,7 +83,6 @@ def create_session():
 @app.route('/run', methods=['POST'])
 def run_code():
     data = request.get_json() 
-    print(data)
 
     if not data:
         return jsonify({'error': 'No JSON data received'}), 400
@@ -78,15 +92,18 @@ def run_code():
     
     session_id = data['session_id']
 
+    #check_session_id(session_id)
+
     if sessions.get(session_id, 0) == 0:
         return jsonify({'message': 'invalid session id recieved'}), 400
     
     session = sessions.get(session_id)
 
-    '''try:
-        get_session_data(session_id)
+    try:
+        #print(get_session_data(session_id))
+        pass
     except Exception:
-        print("not able to save session data")'''
+        print("not able to save session data")
 
     global_vars = session['global']
     local_vars = session['local']
@@ -96,9 +113,13 @@ def run_code():
     
     code = data.get('user_input')
 
-    output = execute_code(code, global_vars, local_vars)
+    output = execute_code(code, {}, local_vars)
 
     if output.get('error', 0) == 0:
+        try:
+            update_vars(session_id, global_vars, local_vars)
+        except Exception:
+            print("cannot update vars")
         return jsonify({'code_output': output}), 200  
     else:
         return jsonify({'message': f"error - {output['error']}"}), 400

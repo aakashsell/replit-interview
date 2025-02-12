@@ -81,7 +81,30 @@ def test_eval_simple_multiple_sessions(client):
 
     assert value1 != value2
 
-def test_nested_object(client):
+def test_nested_1_object(client):
+    response = client.get('/session-id')
+    data1 = response.get_json() 
+    sessionid = data1['session_id']
+    
+    body = {"session_id": sessionid, "user_input": "a = {}"}
+    response = client.post('/run', json=body)
+    
+
+    body = {"session_id": sessionid, "user_input": "a['a'] = a"}
+    response = client.post('/run', json=body)
+
+
+    body = {"session_id": sessionid, "user_input": "a"}
+    response = client.post('/run', json=body)
+    json_response = response.get_json()
+
+    
+
+    root = str(json_response['code_output']['root'])
+    data = json_response['code_output']['data']
+    assert str(data[root]['value']['a']['ref']) == root
+
+def test_nested_2_object(client):
     response = client.get('/session-id')
     data1 = response.get_json() 
     sessionid = data1['session_id']
