@@ -108,7 +108,30 @@ def test_nested_object(client):
     
 
     root = str(json_response['code_output']['root'])
-    assert str(json_response['code_output']['data'][root]['value']['b']['ref']) == root
+    data = json_response['code_output']['data']
+    b_ref = str(data[root]['value']['b']['ref'])
+    assert str(data[b_ref]['value']['a']['ref']) == root
+
+
+def test_eval_bad_var(client):
+    response = client.get('/session-id')
+    data1 = response.get_json() 
+    
+    assert response.status_code == 200
+    assert 'session_id' in data1
+    
+    body = {"session_id": data1['session_id'], "user_input": "bad-variable"}
+    response = client.post('/run', json=body)
+
+
+    assert response.status_code == 400
+    json_response = response.get_json()
+
+    assert 'message' in json_response
+
+    assert "error" in json_response['message'] 
+
+
 
 
 

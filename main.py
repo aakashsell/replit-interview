@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from helpers import *
 import sqlite3
+import json
 
 
 app = Flask(__name__)
@@ -11,21 +12,47 @@ app = Flask(__name__)
 sessions = {}
 sessions['last_id'] = 0
 
-def get_session_data(session_id):
+def get_session_data(session_id = None):
     con = sqlite3.connect("./session.db")
     cur = con.cursor()
 
-    
-    tmp = cur.execute("select count(*) from session_data where session_id = ?", (session_id,))
+    cur.execute("select global_vars, local_vars from session_data where session_id = ?", (session_id,))
     session = cur.fetchone()
+    if session == None or len(session) == 0:
+        cur.execute("INSERT INTO session_data (session_id, global_vars, local_vars) VALUES (?, ?, ?) RETURNING session_id", 
+            (session_id, json.dumps({}), json.dumps({})))
+        session_id = cur.fetchone()[0]
+        sessions[session_id]['global'] = {}
+        sessions[session_id]['local'] = {}
+        return session_id
 
-    if not session[0]:
-        cur.execute("insert into session_data values(?,?,?)", (session_id,{},{},))
+    if not session_id == None:
+        cur.execute("INSERT INTO session_data (global_vars, local_vars) VALUES (?, ?) RETURNING session_id", 
+            (json.dumps({}), json.dumps({})))
+        session_id = cur.fetchone()[0]
+        sessions[session_id]['global'] = {}
+        sessions[session_id]['local'] = {}
+        return session_id
     
     
+    sessions[session_id]['global'] = json.loads(session[0])
+    sessions[session_id]['local'] = json.loads(session[1])
+
+    con.close()
+    
+
 
 def update_vars(session_id, global_vars, local_vars):
+    con = sqlite3.connect("./session.db")
+    cur = con.cursor()
 
+    cur.execute("""
+            UPDATE session_data 
+            SET global_vars = ?, local_vars = ?
+            WHERE session_id = ?
+        """, (json.dumps(global_vars), json.dumps(local_vars), session_id))
+    
+    con.close()
 
 
 @app.route('/session-id', methods=['GET'])
@@ -55,6 +82,11 @@ def run_code():
         return jsonify({'message': 'invalid session id recieved'}), 400
     
     session = sessions.get(session_id)
+
+    '''try:
+        get_session_data(session_id)
+    except Exception:
+        print("not able to save session data")'''
 
     global_vars = session['global']
     local_vars = session['local']
