@@ -44,6 +44,3 @@ def traverse_graph(obj, references):
         references[object_id]["value"] = obj  
 
     return {"ref": object_id} 
-    
-    
-
