@@ -8,6 +8,8 @@ app = Flask(__name__)
 
 
 sessions = {}
+sessions['last_id'] = 0
+
 
 @app.route('/session-id', methods=['GET'])
 def create_session():
@@ -27,12 +29,12 @@ def run_code():
         return jsonify({'error': 'No JSON data received'}), 400
     
     if data.get('session_id', 0) == 0:
-        return jsonify({'message': 'no session id recieved'}), 400
+        return jsonify({'message': 'No session id recieved'}), 400
     
     session_id = data['session_id']
 
     if sessions.get(session_id, 0) == 0:
-        return jsonify({'message': 'invalid session id'}), 400
+        return jsonify({'message': 'invalid session id recieved'}), 400
     
     session = sessions.get(session_id)
 
@@ -46,14 +48,13 @@ def run_code():
 
     output = execute_code(code, global_vars, local_vars)
 
-    if output != 0:
+    if output.get('error', 0) == 0:
         return jsonify({'code_output': output}), 200  
-
-    return jsonify({'message': 'Code did not run properly'}), 400
+    else:
+        return jsonify({'message': f"error - {output['error']}"}), 400
 
 
 
 if __name__ == '__main__':
 
-    sessions['last_id'] = 0
     app.run(debug=True)
