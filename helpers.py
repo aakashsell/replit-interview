@@ -11,6 +11,37 @@ def execute_code(code, global_vars, local_vars):
         except Exception as e2:
             print("exec didn't work, retuning 0 ")
             return 0
-    print(output)
-    return output
+        
+    if isinstance(output, object): 
+        output = handle_objects(output)
+
+    print("output = " + str(output))
+  
+    return str(output)
+
+def handle_objects(obj):
+    output = {}
+    visited = set()
+    objects = traverse_graph(obj, visited)
+    return objects
     
+def traverse_graph(obj, visited):
+    object_id = id(obj)
+    if object_id in visited:
+        return []
+    
+    visited.add(object_id)
+
+    collected = [obj]
+
+    if isinstance(obj, dict):
+        for value in obj.values():
+            collected.extend(traverse_graph(value, visited))
+            
+    elif isinstance(obj, (list, tuple, set)):
+        for item in obj:
+            collected.extend(traverse_graph(item, visited))
+    
+    return collected
+    
+
