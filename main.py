@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from helpers import *
+import sqlite3
 
 
 app = Flask(__name__)
@@ -9,6 +10,22 @@ app = Flask(__name__)
 
 sessions = {}
 sessions['last_id'] = 0
+
+def get_session_data(session_id):
+    con = sqlite3.connect("./session.db")
+    cur = con.cursor()
+
+    
+    tmp = cur.execute("select count(*) from session_data where session_id = ?", (session_id,))
+    session = cur.fetchone()
+
+    if not session[0]:
+        cur.execute("insert into session_data values(?,?,?)", (session_id,{},{},))
+    
+    
+
+def update_vars(session_id, global_vars, local_vars):
+
 
 
 @app.route('/session-id', methods=['GET'])
@@ -24,6 +41,7 @@ def create_session():
 @app.route('/run', methods=['POST'])
 def run_code():
     data = request.get_json() 
+    print(data)
 
     if not data:
         return jsonify({'error': 'No JSON data received'}), 400
