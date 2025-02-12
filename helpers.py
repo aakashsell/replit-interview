@@ -11,6 +11,6 @@ def execute_code(code, global_vars, local_vars):
         except Exception as e2:
             print("exec didn't work, retuning 0 ")
             return 0
-    
+    print(output)
     return output
     

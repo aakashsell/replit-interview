@@ -40,11 +40,10 @@ def run_code():
         return jsonify({'message': 'no code sent'}), 400
     
     code = data.get('user_input')
-    print(code)
 
     output = execute_code(code, global_vars, local_vars)
 
-    if not output:
+    if output != 0:
         return jsonify({'code_output': output}), 200  
 
     return jsonify({'message': 'Code did not run properly'}), 400
