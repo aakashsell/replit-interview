@@ -5,12 +5,12 @@ app = Flask(__name__)
 
 
 sessions = {}
-sessions['last_id'] = 0
 
 @app.route('/session-id', methods=['GET'])
 def create_session():
     session_id = sessions['last_id'] + 1
     sessions['last_id'] = session_id
+    sessions[session_id] = {'global': {}, 'local': {}}
     sessions[session_id]['global'] = {}
     sessions[session_id]['local'] = {}
 
@@ -40,16 +40,18 @@ def run_code():
         return jsonify({'message': 'no code sent'}), 400
     
     code = data.get('user_input')
+    print(code)
 
-    try:
-        output = eval(code, global_vars, local_vars)
-        return jsonify({'code_output': output}), 200
-    except Exception:
-        print("error")
-    
-        return jsonify({'message': 'Data received', 'data': data}), 200
+    output = execute_code(code, global_vars, local_vars)
+
+    if not output:
+        return jsonify({'code_output': output}), 200  
+
+    return jsonify({'message': 'Code did not run properly'}), 400
 
 
 
 if __name__ == '__main__':
+
+    sessions['last_id'] = 0
     app.run(debug=True)
